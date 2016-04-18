@@ -28,6 +28,8 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.content.pm.PackageManager;
+import android.view.Surface;
+
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,7 +51,7 @@ implements SurfaceHolder.Callback {
 
     // Config ----------------------------------------------------------
 
-    private static int autoFocusInterval = 500; // Interval between AFcallback and next AF attempt.
+    private static int autoFocusInterval = 2000; // Interval between AFcallback and next AF attempt.
 
     // Public Constants ------------------------------------------------
 
@@ -221,6 +223,8 @@ implements SurfaceHolder.Callback {
             return;
         }
 
+
+
         /*  Camera.Parameters camParams = camera.getParameters();
        if(flashMode.equals("on")) {
             camParams.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
@@ -240,7 +244,29 @@ implements SurfaceHolder.Callback {
 
         tryStartPreview();*/
     }
+    private void setCameraDisplayOrientation(Activity activity ,int cameraId) {
+        android.hardware.Camera.CameraInfo info =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(cameraId, info);
+        int rotation = activity.getWindowManager().getDefaultDisplay()
+                .getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
+        }
 
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        camera.setDisplayOrientation(result);
+    }
     @Override
     public void onPause ()
     {
@@ -334,12 +360,16 @@ implements SurfaceHolder.Callback {
        
     camera.startPreview();
         android.hardware.Camera.Parameters camParams = camera.getParameters();
-        //If the flash is set to off 
-        if(camParams.getFlashMode().equals(Parameters.FLASH_MODE_OFF) && !(camParams.getFlashMode().equals(Parameters.FLASH_MODE_TORCH))&& !(camParams.getFlashMode().equals(Parameters.FLASH_MODE_ON)))
-            camParams.setFlashMode(Parameters.FLASH_MODE_TORCH);
-        else //if(camParams.getFlashMode() == Parameters.FLASH_MODE_ON || camParams.getFlashMode()== Parameters.FLASH_MODE_TORCH)
-            camParams.setFlashMode(Parameters.FLASH_MODE_OFF);
-        try
+        //If the flash is set to off
+        try {
+            if (camParams.getFlashMode().equals(Parameters.FLASH_MODE_OFF) && !(camParams.getFlashMode().equals(Parameters.FLASH_MODE_TORCH)) && !(camParams.getFlashMode().equals(Parameters.FLASH_MODE_ON)))
+                camParams.setFlashMode(Parameters.FLASH_MODE_TORCH);
+            else //if(camParams.getFlashMode() == Parameters.FLASH_MODE_ON || camParams.getFlashMode()== Parameters.FLASH_MODE_TORCH)
+                camParams.setFlashMode(Parameters.FLASH_MODE_OFF);
+        }   catch(RuntimeException e) {
+
+        }
+            try
         {
            // camera.setParameters(camParams);
             camera.setPreviewDisplay(holder);
@@ -357,8 +387,8 @@ implements SurfaceHolder.Callback {
             //tryStartPreview();
             //camParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             camera.setParameters(camParams);
-        
-    
+
+
         }
         catch(RuntimeException e)
         {
@@ -519,14 +549,19 @@ implements SurfaceHolder.Callback {
                     break;
                 }
                 // 90 degrees rotation for Portrait orientation Activity.
-                camera.setDisplayOrientation(rotation);
+               // camera.setDisplayOrientation(rotation);
+                setCameraDisplayOrientation(this, 0);
+
                 android.hardware.Camera.Parameters camParams = camera.getParameters();
                 
                 //camParams.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                
-                    camParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-                    camera.setParameters(camParams);
-                
+
+                try {
+                   camParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                   camera.setParameters(camParams);
+                }catch (Exception e){
+
+                }
                 camera.setPreviewDisplay(holder);
                 camera.setPreviewCallback(previewCb);
                 camera.startPreview();
