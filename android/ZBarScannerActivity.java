@@ -334,7 +334,7 @@ implements SurfaceHolder.Callback {
     }
 
     public void toggleFlash(View view) {
-		camera.startPreview();
+		    camera.startPreview();
         android.hardware.Camera.Parameters camParams = camera.getParameters();
         //If the flash is set to off
         try {
@@ -346,7 +346,7 @@ implements SurfaceHolder.Callback {
 
         }
 
-		try {
+		    try {
            // camera.setParameters(camParams);
             camera.setPreviewDisplay(holder);
             camera.setPreviewCallback(previewCb);
@@ -362,6 +362,10 @@ implements SurfaceHolder.Callback {
             //tryStopPreview();
             //tryStartPreview();
             //camParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+
+            if (camParams.getSupportedColorEffects().contains(Camera.Parameters.EFFECT_NEGATIVE)) {
+              camParams.setColorEffect(Camera.Parameters.EFFECT_NEGATIVE);
+            }
             camera.setParameters(camParams);
         } catch(RuntimeException e) {
             Log.d("csZBar", (new StringBuilder("Unsupported camera parameter reported for flash mode: ")).append(flashMode).toString());
@@ -530,6 +534,9 @@ implements SurfaceHolder.Callback {
 
                 try {
                    camParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                   if (camParams.getSupportedColorEffects().contains(Camera.Parameters.EFFECT_NEGATIVE)) {
+                     camParams.setColorEffect(Camera.Parameters.EFFECT_NEGATIVE);
+                   }
                    camera.setParameters(camParams);
                 } catch (Exception e) {
 					// TODO: don't swallow
